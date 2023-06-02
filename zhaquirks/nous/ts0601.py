@@ -43,7 +43,10 @@ from zigpy.zcl.clusters.measurement import (
 
 
 class TuyaMCUCluster(OriginalTuyaMCUCluster):
-    """My hope is that these fixes get merged into TuyaMCUCluster."""
+    """My hope is that my simple fixes get merged into TuyaMCUCluster."""
+
+    class TuyaConnectionStatus(OriginalTuyaMCUCluster.TuyaConnectionStatus):
+        """Otherwise such hacks are needed to mock the actual TuyaMCUCluster."""
 
     def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
         """Handle set_time requests (0x24)."""
