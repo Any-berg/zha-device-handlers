@@ -333,7 +333,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
         self.debug("handle_set_time_request response: %s", payload_rsp)
         self.create_catching_task(
-            super().command(TUYA_SET_TIME, payload_rsp, expect_reply=False)
+            self.command(TUYA_SET_TIME, payload_rsp, expect_reply=False)
         )
 
         return foundation.Status.SUCCESS
@@ -348,7 +348,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         payload_rsp.status = b"\x01"  # 0x00 not connected to internet | 0x01 connected to internet | 0x02 time out
 
         self.create_catching_task(
-            super().command(TUYA_MCU_CONNECTION_STATUS, payload_rsp, expect_reply=False)
+            self.command(TUYA_MCU_CONNECTION_STATUS, payload_rsp, expect_reply=False)
         )
 
         return foundation.Status.SUCCESS
