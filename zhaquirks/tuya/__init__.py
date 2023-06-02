@@ -516,7 +516,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             cmd_payload.function = 0
             cmd_payload.data = record.value.value
 
-            await super().command(
+            await self.command(
                 TUYA_SET_DATA,
                 cmd_payload,
                 manufacturer=manufacturer,
