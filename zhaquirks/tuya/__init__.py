@@ -1643,3 +1643,16 @@ class TuyaNewManufCluster(CustomCluster):
                     cluster.get(dp_map.attribute_name, 0) & (~value.mask) | value.value
                 )
             cluster.update_attribute(dp_map.attribute_name, value)
+
+
+class TemperatureUnit(t.enum8):
+    CELSIUS = 0x00
+    FAHRENHEIT = 0x01
+
+
+class ValueAlarm(t.enum8):
+    """Temperature and humidity alarm values."""
+
+    ALARM_OFF = 0x02
+    MAX_ALARM_ON = 0x01
+    MIN_ALARM_ON = 0x00
