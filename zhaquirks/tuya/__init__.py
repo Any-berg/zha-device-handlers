@@ -447,7 +447,7 @@ class TuyaManufCluster(CustomCluster):
         payload.extend(local_timestamp.to_bytes(4, "big", signed=False))
 
         self.create_catching_task(
-            super().command(TUYA_SET_TIME, payload, expect_reply=False)
+            self.command(TUYA_SET_TIME, payload, expect_reply=False)
         )
 
 
