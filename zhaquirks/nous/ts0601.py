@@ -166,7 +166,6 @@ class NousClimateSensorE6(CustomDevice):
                     TuyaRelativeHumidity,
                     TuyaPowerConfigurationCluster2AAA,
                     NousManufClusterE6,
-
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             }
@@ -177,15 +176,15 @@ class NousClimateSensorE6(CustomDevice):
 class NousClimateSensorSZ_T04(NousClimateSensorE6):
     """Nous model SZ-T04 temperature and humidity sensor with clock."""
 
-    signature = NousClimateSensorE6.signature.copy() # substitute models info
-    signature[MODELS_INFO] = [
+    signature = NousClimateSensorE6.signature.copy()
+    signature[MODELS_INFO] = [ # substitute models info
         ("_TZE200_locansqn", "TS0601"),
         #("_TZE200_lve3dvpy", "TS0601"), # untested but using same configuration on z2mqtt
         #("_TZE200_c7emyjom", "TS0601"),
     ]
 
-    replacement = NousClimateSensorE6.replacement.copy() # substitute input clusters
-    replacement[ENDPOINTS][1][INPUT_CLUSTERS] = [
+    replacement = NousClimateSensorE6.replacement.copy()
+    replacement[ENDPOINTS][1][INPUT_CLUSTERS] = [ # substitute input clusters
         Basic.cluster_id,
         Groups.cluster_id,
         Scenes.cluster_id,
@@ -196,4 +195,4 @@ class NousClimateSensorSZ_T04(NousClimateSensorE6):
     ]
 
 
-# _TZE200_whkgqxse has a similar configuration but it should be handled in zhaquirks.tuya.ts0601_sensor
+# _TZE200_whkgqxse has similar configuration - should be handled in zhaquirks.tuya.ts0601_sensor
