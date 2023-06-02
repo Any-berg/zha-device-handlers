@@ -1,6 +1,6 @@
-"""Nous temp and humidity sensors."""
+"""Nous temp and humidity sensors (with all dependencies)."""
 
-from typing import Dict
+from typing import Dict, Any
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -25,16 +25,113 @@ from zhaquirks.const import (
 from zhaquirks.tuya import (
     NoManufacturerCluster,
     TuyaPowerConfigurationCluster2AAA,
-    TuyaPowerConfigurationCluster3AAA,
-    TuyaTemperatureMeasurement,
-    TuyaRelativeHumidity,
-    TemperatureUnit,
-    ValueAlarm,
+    TuyaLocalCluster,
+    TuyaTimePayload,
+    TUYA_SET_TIME,
 )
 from zhaquirks.tuya.mcu import (
-    TuyaMCUCluster,
+    TuyaMCUCluster as OriginalTuyaMCUCluster,
     DPToAttributeMapping,
+    TUYA_MCU_CONNECTION_STATUS,
 )
+from zigpy.zcl import foundation
+import datetime
+from zigpy.zcl.clusters.measurement import (
+    RelativeHumidity,
+    TemperatureMeasurement,
+)
+
+
+class TuyaMCUCluster(OriginalTuyaMCUCluster):
+    """My hope is that these fixes get merged into TuyaMCUCluster."""
+
+    def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
+        """Handle set_time requests (0x24)."""
+
+        self.debug("handle_set_time_request payload: %s", payload)
+        payload_rsp = TuyaTimePayload()
+
+        utc_now = datetime.datetime.utcnow()
+        now = datetime.datetime.now()
+
+        offset_time = datetime.datetime(self.set_time_offset, 1, 1)
+        offset_time_local = datetime.datetime(
+            self.set_time_local_offset or self.set_time_offset, 1, 1
+        )
+
+        utc_timestamp = int((utc_now - offset_time).total_seconds())
+        local_timestamp = int((now - offset_time_local).total_seconds())
+
+        payload_rsp.extend(utc_timestamp.to_bytes(4, "big", signed=False))
+        payload_rsp.extend(local_timestamp.to_bytes(4, "big", signed=False))
+
+        self.debug("handle_set_time_request response: %s", payload_rsp)
+        self.create_catching_task(
+            self.command(TUYA_SET_TIME, payload_rsp, expect_reply=False)
+        )
+
+        return foundation.Status.SUCCESS
+
+    def handle_mcu_connection_status(
+        self, payload: TuyaConnectionStatus
+    ) -> foundation.Status:
+        """Handle gateway connection status requests (0x25)."""
+
+        payload_rsp = TuyaMCUCluster.TuyaConnectionStatus()
+        payload_rsp.tsn = payload.tsn
+        payload_rsp.status = b"\x01"  # 0x00 not connected to internet | 0x01 connected to internet | 0x02 time out
+
+        self.create_catching_task(
+            self.command(TUYA_MCU_CONNECTION_STATUS, payload_rsp, expect_reply=False)
+        )
+
+        return foundation.Status.SUCCESS
+
+
+class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
+    """Tuya local TemperatureMeasurement cluster."""
+
+
+class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
+    """Tuya local RelativeHumidity cluster with a device RH_MULTIPLIER factor."""
+
+    def update_attribute(self, attr_name: str, value: Any) -> None:
+        """Apply a correction factor to value."""
+
+        if attr_name == "measured_value":
+            value = value * (
+                self.endpoint.device.RH_MULTIPLIER
+                if hasattr(self.endpoint.device, "RH_MULTIPLIER")
+                else 100
+            )
+        return super().update_attribute(attr_name, value)
+
+
+class TuyaPowerConfigurationCluster3AAA(PowerConfiguration, TuyaLocalCluster):
+    """PowerConfiguration cluster for devices with 3 AAA."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 4,
+        BATTERY_QUANTITY: 3,
+        BATTERY_RATED_VOLTAGE: 15,
+    }
+
+
+class TemperatureUnit(t.enum8):
+    CELSIUS = 0x00
+    FAHRENHEIT = 0x01
+
+
+class ValueAlarm(t.enum8):
+    """Temperature and humidity alarm values."""
+
+    ALARM_OFF = 0x02
+    MAX_ALARM_ON = 0x01
+    MIN_ALARM_ON = 0x00
 
 
 class decimal1(int):
