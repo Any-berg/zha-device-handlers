@@ -12,6 +12,10 @@ from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
+from zigpy.zcl.clusters.measurement import (
+    RelativeHumidity,
+    TemperatureMeasurement,
+)
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
@@ -869,6 +873,25 @@ class TuyaLocalCluster(LocalDataCluster):
             self.debug("no such attribute: %s", attr_name)
             return
         return self._update_attribute(attr.id, value)
+
+
+class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
+    """Tuya local TemperatureMeasurement cluster."""
+
+
+class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
+    """Tuya local RelativeHumidity cluster with a device RH_MULTIPLIER factor."""
+
+    def update_attribute(self, attr_name: str, value: Any) -> None:
+        """Apply a correction factor to value."""
+
+        if attr_name == "measured_value":
+            value = value * (
+                self.endpoint.device.RH_MULTIPLIER
+                if hasattr(self.endpoint.device, "RH_MULTIPLIER")
+                else 100
+            )
+        return super().update_attribute(attr_name, value)
 
 
 class _TuyaNoBindPowerConfigurationCluster(CustomCluster, PowerConfiguration):
